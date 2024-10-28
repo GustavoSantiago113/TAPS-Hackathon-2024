@@ -1,0 +1,22 @@
+"0","ggplot(sm.df %>% filter(Team ==12), aes(x = Date)) +
+   geom_rect(aes(xmin = min(sm.df$Date)-2, xmax = max(sm.df$Date)+2, ymin = -Inf, ymax = PWP*100),
+             fill = ""brown4"", alpha = 0.002)+
+  geom_rect(aes(xmin = min(sm.df$Date)-2, xmax = max(sm.df$Date)+2, ymin = PWP*100, ymax = FC*100),
+            fill = ""gold"", alpha = 0.002)+
+     geom_rect(aes(xmin = min(sm.df$Date)-2, xmax = max(sm.df$Date)+2, ymin = FC*100, ymax = Inf),
+             fill = ""green4"", alpha = 0.002)+
+  geom_line(aes(y = daily_avg_moist, color = ""Soil Moisture""), size = 1.5) + 
+  geom_hline(yintercept = PWP*100, linetype = ""dashed"", color = ""brown"") +  
+  geom_hline(yintercept = FC*100, linetype = ""dashed"", color = ""black"") +  
+  scale_y_continuous(sec.axis = sec_axis(~., name = ""Soil Moisture (%)"")) +
+  scale_color_manual(name = ""Legend"", values = c(""Calculated Soil Moisture"" = ""darkred"", ""Soil Probe Reading"" = ""blue"")) +
+  labs(x = ""Date"", y = ""Irrigation (mm)"", title = ""Irrigation and Soil Moisture over Time"") +
+  theme_minimal() +
+  theme(legend.position = ""top"")
+"
+"2","Warning:"
+"2"," [38;5;252mNo shared levels found between `names(values)` of the manual scale and the data's [32mcolour[38;5;252m values.[39m
+"
+"2","Warning:"
+"2"," [38;5;252mNo shared levels found between `names(values)` of the manual scale and the data's [32mcolour[38;5;252m values.[39m
+"

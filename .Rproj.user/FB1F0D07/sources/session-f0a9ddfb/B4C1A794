@@ -1,0 +1,28 @@
+{
+    "id": "B4C1A794",
+    "path": "~/GitHub/TAPS-Hackathon-2024/soil_water.Rmd",
+    "project_path": "soil_water.Rmd",
+    "type": "r_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1730073089852.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "219,46",
+        "scrollLine": "199",
+        "last_setup_crc32": "f0a9ddfb52792946"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1730151208,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1730151208302,
+    "read_only": false,
+    "read_only_alternatives": []
+}
