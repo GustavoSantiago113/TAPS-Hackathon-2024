@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OGRVRTDataSource>
+    <OGRVRTLayer name="2024_TAPS_Veris_raw_spatial_data-EC">
+        <SrcDataSource relativeToVRT="1">2024_TAPS_Veris_raw_spatial_data.xlsx</SrcDataSource>
+        <!--Header=False-->
+        <SrcLayer>EC</SrcLayer>
+        <Field name="Red" src="Red" type="Real"/>
+        <Field name="IR" src="IR" type="Real"/>
+        <Field name="Altitude" src="Altitude" type="Real"/>
+        <Field name="Speed" src="Speed" type="Real"/>
+        <Field name="Temp" src="Temp" type="Real"/>
+        <Field name="Depth" src="Depth" type="Real"/>
+        <Field name="EC SH" src="EC SH" type="Real"/>
+        <Field name="EC DP" src="EC DP" type="Real"/>
+        <Field name="EC Ratio" src="EC Ratio" type="Real"/>
+        <Field name="Slope" src="Slope" type="Real"/>
+        <Field name="Curve" src="Curve" type="Real"/>
+        <GeometryType>wkbPoint</GeometryType>
+        <LayerSRS>EPSG:4326</LayerSRS>
+        <GeometryField encoding="PointFromColumns" x="Long" y="Lat"/>
+    </OGRVRTLayer>
+</OGRVRTDataSource>
