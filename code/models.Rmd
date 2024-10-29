@@ -9,50 +9,6 @@ output: html_document
 library(readxl)
 library(tidyverse)
 ```
-
-```{r}
-file_paths <- list(
-  aqua = "sensor/24 KSU TAPS AquaSpy.xlsx",
-  arable = "sensor/24 KSU TAPS Arable.xlsx",
-  cropx = "sensor/24 KSU TAPS CropX.xlsx",
-  groguru = "sensor/24 KSU TAPS GroGuru.xlsx",
-  sentek = "sensor/24 KSU TAPS Sentek.xlsx"
-)
-
-read_and_bind_sheets_in_file <- function(file_path) {
-  sheets <- excel_sheets(file_path)
-  
-  map_dfr(sheets, ~ read_excel(file_path, sheet = .x) %>%
-            mutate(sheet_name = .x))
-}
-
-df_aqua <- read_and_bind_sheets_in_file(file_paths$aqua)[1:6]
-#df_arable <- read_and_bind_sheets_in_file(file_paths$arable)
-#df_cropx <- read_and_bind_sheets_in_file(file_paths$cropx)
-#df_groguru <- read_and_bind_sheets_in_file(file_paths$groguru)
-df_sentek <- read_and_bind_sheets_in_file(file_paths$sentek)
-
-df_aqua %>% 
-  summarise(Team, Timestamp, moist_6inch = (`4"...4`+`8"...5`)/2) %>% 
-  mutate(Date = as.Date(Timestamp)) %>%  
-  group_by(Team, Date) %>%               
-  summarise(daily_avg_moist = mean(moist_6inch, na.rm = TRUE), .groups = "drop") %>% 
-  mutate(sensor = "aqua") %>% 
-  
-  bind_rows(
-
-df_sentek %>% 
-  summarise(Team, Timestamp, moist_6inch = `Sensor #2 (15 cm)`) %>% 
-  mutate(Date = as.Date(Timestamp)) %>%  
-  group_by(Team, Date) %>%               
-  summarise(daily_avg_moist = mean(moist_6inch, na.rm = TRUE), .groups = "drop") %>% 
-  mutate(sensor = "sentek")
-
-  ) %>% 
-  
-  write.csv(file = "soil_aqua_sentek_6inch.csv")
-```
-
 # Model training
 
 ## Wrangling
@@ -98,14 +54,12 @@ summary(df.xgb)
 # Model: ETc 
 
 ```{r}
-# Generate a 70-30 split for treatments, preserving the structure within each treatment
 train_treatments <- df.xgb %>%
   group_by(trt_id) %>%
   summarise() %>%
   sample_frac(0.7) %>%
   pull(trt_id)
 
-# Divide dataset into training and test based on treatment IDs
 df_train <- df.xgb %>%
   filter(trt_id %in% train_treatments)
 
@@ -114,7 +68,6 @@ df_test <- df.xgb %>%
 ```
 
 ```{r}
-# Prepare training data for NDVI prediction
 X_train <- df_train %>%
   dplyr::select(-c(trt_id, date, ndvi)) %>%
   as.matrix()
@@ -131,32 +84,23 @@ ndvi_model <- caret::train(
   verbose = FALSE,
   verbosity = 0)
 
-# Extract best hyperparameters
 best_params_ndvi <- ndvi_model$bestTune
 
-# Initialize the result data frame for NDVI predictions, including trt_id and date
 ndvi_preds_final <- data.frame(trt_id = integer(), date = as.Date(character()), preds = numeric(), observed_ndvi = numeric())
-
-# Initialize an empty list for variable importance
 ndvi_importance_list <- list()
-
-# Unique treatments for Leave-One-Treatment-Out Cross-Validation
 unique_treatments <- unique(df.xgb$trt_id)
 
 for (trt in unique_treatments) {
   
-  # Define training and test set for the current treatment
   df_train_loocv <- df.xgb %>% filter(trt_id != trt)
   df_test_loocv <- df.xgb %>% filter(trt_id == trt)
   
-  # Prepare data matrices
   X_train_loocv <- df_train_loocv %>% dplyr::select(-c(trt_id, date, ndvi)) %>% as.matrix()
   y_train_loocv <- df_train_loocv$ndvi
   
   X_test_loocv <- df_test_loocv %>% dplyr::select(-c(trt_id, date, ndvi)) %>% as.matrix()
   y_test_loocv <- df_test_loocv$ndvi
   
-  # Train model using best parameters
   final_ndvi_model <- xgboost(
     data = X_train_loocv,
     label = y_train_loocv,
@@ -171,22 +115,17 @@ for (trt in unique_treatments) {
     gamma = best_params_ndvi$gamma,
     verbose = 0)
   
-  # Make predictions for the left-out treatment
   temp_pred_ndvi <- predict(final_ndvi_model, X_test_loocv)
   
-  # Store predictions and actual NDVI values with trt_id and date
   preds <- data.frame(trt_id = trt, date = df_test_loocv$date, preds = temp_pred_ndvi, observed_ndvi = y_test_loocv)
   
-  # Combine predictions for evaluation
   ndvi_preds_final <- rbind(ndvi_preds_final, preds)
   
-  # Extract variable importance if desired
   importance <- xgb.importance(model = final_ndvi_model)
   importance$iteration <- trt
   ndvi_importance_list[[as.character(trt)]] <- importance
 }
 
-# Optional: Evaluate model performance for NDVI
 ndvi_rmse <- rmse(ndvi_preds_final$observed_ndvi, ndvi_preds_final$preds)
 ndvi_mae <- mae(ndvi_preds_final$observed_ndvi, ndvi_preds_final$preds)
 ndvi_r2 <- cor(ndvi_preds_final$observed_ndvi, ndvi_preds_final$preds)^2
@@ -195,7 +134,6 @@ list(NDVI_RMSE = ndvi_rmse, NDVI_MAE = ndvi_mae, NDVI_R_squared = ndvi_r2)
 ```
 
 ```{r}
-# Variable importance
 ndvi_importance_df <- do.call(rbind, ndvi_importance_list) %>%
   group_by(Feature) %>%
   summarise(Importance = mean(Gain, na.rm = TRUE)) %>%
@@ -203,7 +141,6 @@ ndvi_importance_df <- do.call(rbind, ndvi_importance_list) %>%
 
 top_10_ndvi <- ndvi_importance_df %>% top_n(15, Importance)
 
-# Create a variable importance plot for the top 10 variables
 ggplot(top_10_ndvi, aes(x = reorder(Feature, Importance), y = Importance, fill = Importance)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   coord_flip() +
@@ -218,17 +155,14 @@ ggplot(top_10_ndvi, aes(x = reorder(Feature, Importance), y = Importance, fill =
     axis.title.y = element_text(face = "bold", size = 15),
     axis.text = element_text(size = 12))
 
-# Scatter plot with metrics display for NDVI predictions
 ndvi_preds_final <- ndvi_preds_final %>% na.omit()
 
-# Calculate metrics for NDVI predictions
 ndvi_r_squared <- cor(ndvi_preds_final$observed_ndvi, ndvi_preds_final$preds)^2
 ndvi_mae <- mean(abs(ndvi_preds_final$observed_ndvi - ndvi_preds_final$preds))
 ndvi_rmse <- sqrt(mean((ndvi_preds_final$observed_ndvi - ndvi_preds_final$preds)^2))
 ndvi_rrmse <- ndvi_rmse / mean(ndvi_preds_final$observed_ndvi) * 100
 ndvi_kge <- 1 - sqrt((ndvi_r_squared - 1)^2 + (mean(ndvi_preds_final$preds) / mean(ndvi_preds_final$observed_ndvi) - 1)^2)
 
-# Scatter plot for observed vs. predicted NDVI with metrics
 ggplot(ndvi_preds_final, aes(x = observed_ndvi, y = preds)) +
   geom_point(shape = 21, color = "grey", fill = "steelblue", alpha = 0.5, size = 3) +
   geom_abline(slope = 1, intercept = 0, color = "black", size = 1) + # 1:1 line
@@ -251,7 +185,6 @@ ggplot(ndvi_preds_final, aes(x = observed_ndvi, y = preds)) +
 
 
 ```{r}
-# Variable importance
 importance_df <- do.call(rbind, importance_list_) %>%
   group_by(Feature) %>%
   summarise(Importance = mean(Gain, na.rm = TRUE)) %>%
@@ -259,7 +192,6 @@ importance_df <- do.call(rbind, importance_list_) %>%
 
 top_10 <- importance_df %>% top_n(15, Importance)
 
-# Create a variable importance plot for the top 10 variables
 ggplot(top_10, aes(x = reorder(Feature, Importance), y = Importance, fill = Importance)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   coord_flip() +
@@ -278,14 +210,12 @@ ggplot(top_10, aes(x = reorder(Feature, Importance), y = Importance, fill = Impo
 ```{r}
 preds_final <- preds_final %>% na.omit()
 
-# Calculate metrics
 r_squared <- cor(preds_final$etc_mm, preds_final$preds)^2
 mae <- mean(abs(preds_final$etc_mm - preds_final$preds))
 rmse <- sqrt(mean((preds_final$etc_mm - preds_final$preds)^2))
 rrmse <- rmse / mean(preds_final$etc_mm) * 100
 kge <- 1 - sqrt((r_squared - 1)^2 + (mean(preds_final$preds) / mean(preds_final$etc_mm) - 1)^2)
 
-# Scatter plot with regression line and metrics
 ggplot(preds_final, aes(x = etc_mm, y = preds)) +
   geom_point(shape = 21, color = "grey", fill = "steelblue", alpha = 0.5, size = 3) +
   geom_abline(slope = 1, intercept = 0, color = "black", size = 1) + # 1:1 line
@@ -317,14 +247,12 @@ df.xgb2 <- df.xgb %>%
 ```
 
 ```{r}
-# Generate a 70-30 split for treatments, preserving the structure within each treatment
 train_treatments <- df.xgb2 %>%
   group_by(trt_id) %>%
   summarise() %>%
   sample_frac(0.7) %>%
   pull(trt_id)
 
-# Divide dataset into training and test based on treatment IDs
 df_train <- df.xgb2 %>%
   filter(trt_id %in% train_treatments)
 
@@ -339,7 +267,6 @@ tune_control <- caret::trainControl(
   verboseIter = FALSE,
   allowParallel = TRUE)
 
-# Hyperparameter grid
 hyperparam_grid <- expand.grid(
   nrounds = c(50, 200, 300),
   max_depth = c(2, 3, 5, 8, 10),
@@ -349,14 +276,12 @@ hyperparam_grid <- expand.grid(
   min_child_weight = 1,
   subsample = c(0.5, 0.7, 1))
 
-# Prepare training data for NDVI prediction
 X_train <- df_train %>%
   dplyr::select(-c(trt_id, date, ndvi)) %>%
   as.matrix()
 
 y_train <- df_train$ndvi
 
-# Hyperparameter tuning using k-fold cross-validation
 bst <- caret::train(
   x = X_train,
   y = y_train,
@@ -366,32 +291,23 @@ bst <- caret::train(
   verbose = FALSE,
   verbosity = 0)
 
-# Extract best hyperparameters
 best_params <- bst$bestTune
 
-# Initialize the result data frame for NDVI predictions, including trt_id and date
 preds_final <- data.frame(trt_id = integer(), date = as.Date(character()), preds = numeric(), observed_ndvi = numeric())
-
-# Initialize an empty list for variable importance
 importance_list_ <- list()
-
-# Unique treatments for Leave-One-Treatment-Out Cross-Validation
 unique_treatments <- unique(df.xgb2$trt_id)
 
 for (trt in unique_treatments) {
   
-  # Define training and test set for the current treatment
   df_train_loocv <- df.xgb2 %>% filter(trt_id != trt)
   df_test_loocv <- df.xgb2 %>% filter(trt_id == trt)
   
-  # Prepare data matrices
   X_train_loocv <- df_train_loocv %>% dplyr::select(-c(trt_id, date, ndvi)) %>% as.matrix()
   y_train_loocv <- df_train_loocv$ndvi
   
   X_test_loocv <- df_test_loocv %>% dplyr::select(-c(trt_id, date, ndvi)) %>% as.matrix()
   y_test_loocv <- df_test_loocv$ndvi
   
-  # Train model using best parameters
   final_model <- xgboost(
     data = X_train_loocv,
     label = y_train_loocv,
@@ -407,22 +323,17 @@ for (trt in unique_treatments) {
     verbose = 0
   )
   
-  # Make predictions for the left-out treatment
   temp_pred <- predict(final_model, X_test_loocv)
   
-  # Store predictions and actual NDVI values with trt_id and date
   preds <- data.frame(trt_id = trt, date = df_test_loocv$date, preds = temp_pred, observed_ndvi = y_test_loocv)
   
-  # Combine predictions for evaluation
   preds_final <- rbind(preds_final, preds)
   
-  # Extract variable importance if desired
   importance <- xgb.importance(model = final_model)
   importance$iteration <- trt
   importance_list_[[as.character(trt)]] <- importance
 }
 
-# Optional: Evaluate model performance for NDVI
 rmse_score <- rmse(preds_final$observed_ndvi, preds_final$preds)
 mae_score <- mae(preds_final$observed_ndvi, preds_final$preds)
 r2_score <- cor(preds_final$observed_ndvi, preds_final$preds)^2
@@ -438,7 +349,6 @@ importance_df <- do.call(rbind, importance_list_) %>%
 
 top_10 <- importance_df %>% top_n(15, Importance)
 
-# Create a variable importance plot for the top 10 variables
 ggplot(top_10, aes(x = reorder(Feature, Importance), y = Importance, fill = Importance)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   coord_flip() +
@@ -458,14 +368,12 @@ ggplot(top_10, aes(x = reorder(Feature, Importance), y = Importance, fill = Impo
 ```{r}
 preds_final <- preds_final %>% na.omit()
 
-# Calculate additional metrics for NDVI predictions
 r_squared <- cor(preds_final$observed_ndvi, preds_final$preds)^2
 mae <- mean(abs(preds_final$observed_ndvi - preds_final$preds))
 rmse <- sqrt(mean((preds_final$observed_ndvi - preds_final$preds)^2))
 rrmse <- rmse / mean(preds_final$observed_ndvi) * 100
 kge <- 1 - sqrt((r_squared - 1)^2 + (mean(preds_final$preds) / mean(preds_final$observed_ndvi) - 1)^2)
 
-# Scatter plot for observed vs. predicted NDVI with metrics
 ggplot(preds_final, aes(x = observed_ndvi, y = preds)) +
   geom_point(shape = 21, color = "grey", fill = "forestgreen", alpha = 0.5, size = 3) +
   geom_abline(slope = 1, intercept = 0, color = "black", size = 1) + # 1:1 line
