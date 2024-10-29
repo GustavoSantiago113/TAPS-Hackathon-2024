@@ -1,0 +1,229 @@
+---
+title: "Untitled"
+author: "Carlos Hernandez"
+date: "2024-10-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(raster)
+library(sf)
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(tidyverse)
+library(janitor)
+```
+
+
+```{r}
+folder_path <- "../data/Planet/" 
+
+image_files <- list.files(folder_path,
+                          recursive = TRUE, 
+                          pattern = "_3B_AnalyticMS_SR_8b_clip.tif$", 
+                          full.names = TRUE)
+
+# Cargar las imágenes y renombrar las bandas
+all_images <- lapply(image_files, function(filepath) {
+  img <- stack(filepath)
+  date_part <- sub(".*?/(\\d{8})/.*", "\\1", filepath)
+  names(img) <- c(
+    paste0("Planet_", date_part, "_coastal_blue"),
+    paste0("Planet_", date_part, "_blue"),
+    paste0("Planet_", date_part, "_green_i"),
+    paste0("Planet_", date_part, "_green"),
+    paste0("Planet_", date_part, "_yellow"),
+    paste0("Planet_", date_part, "_red"),
+    paste0("Planet_", date_part, "_rededge"),
+    paste0("Planet_", date_part, "_nir")
+  )
+  
+  return(img)})
+
+
+combined_stack <- do.call(stack, all_images)
+
+```
+
+```{r}
+raster_crs <- crs(combined_stack)
+```
+
+
+```{r}
+trial_plots <- read_sf('../data/Plot_Boundary/Plot boundaries/Map with all plots/2024_Colby_TAPS_Harvest_Area.shp') %>%
+  st_transform(raster_crs)
+plot(trial_plots)
+```
+
+
+```{r}
+
+rs_data_plots <- data.frame(trial_plots, 
+                            raster::extract(combined_stack, trial_plots,fun='mean'))  %>%
+  pivot_longer(cols = -c(Name, Block_ID, TRT_ID, Plot_ID, geometry), 
+               names_to = "variable", 
+               values_to = "value") %>%
+  mutate(variable = case_when(
+    str_detect(variable, "coastal_blue") ~ str_replace(variable,"coastal_blue","coastalblue"),
+    str_detect(variable, "green_i") ~ str_replace(variable,"green_i","green2"),
+    TRUE ~ variable  
+  )) %>%
+  separate(col = 'variable',into = c('Planet','Date','band'),sep = '_') %>%
+  pivot_wider(names_from = 'band',values_from = 'value') %>%
+  select(-Planet) %>%
+  mutate(Date = ymd(Date),
+         Planet_NDVI = (nir - red) / (nir + red)) %>%
+  st_as_sf() %>%
+  st_set_crs(raster_crs) %>%
+  st_transform('epsg:4326')
+
+sort(unique(rs_data_plots$TRT_ID))
+```
+
+####
+
+```{r}
+team_2_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #2 Data',skip = 2) %>%
+  mutate(team = '2') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_4_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #4 Data',skip = 2) %>%
+  mutate(team = '4') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_5_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #5 Data',skip = 2) %>%
+  mutate(team = '5') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_13_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #13 Data',skip = 2) %>%
+  mutate(team = '13') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_15_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #15 Data',skip = 2) %>%
+  mutate(team = '15') %>% 
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_16_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #16 Data',skip = 2) %>%
+  mutate(team = '16') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_18_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #18 Data',skip = 2) %>%
+  mutate(team = '18') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_21_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #21 Data',skip = 2) %>%
+  mutate(team = '21') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_22_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #22 Data',skip = 2) %>%
+  mutate(team = '22') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_26_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #26 Data',skip = 2) %>%
+  mutate(team = '26') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+team_27_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #27 Data',skip = 2) %>%
+  mutate(team = '27') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+
+team_28_arable <- read_xlsx('../data/Sensor_data/Sensor Data/24 KSU TAPS Arable.xlsx',
+          sheet = 'Team #28 Data',skip = 2) %>%
+  mutate(team = '28') %>%
+  janitor::clean_names() %>%
+  select(-c("chlorophyll_index","leaf_wetness_hours",
+            'max_temp_time','min_temp_time','wind_direction')) %>%
+  rename(date = timestamp) %>%
+  mutate(across(.cols = -c(date, team), .fns = as.double))
+
+
+colnames(team_28_arable)
+weather_data_joined_team <- bind_rows(team_2_arable,team_4_arable,team_5_arable,
+          team_13_arable,team_15_arable,team_16_arable,
+          team_18_arable,team_21_arable,team_22_arable,
+          team_26_arable,team_27_arable,team_28_arable)
+
+```
+
+```{r}
+management_planting <- read_xlsx('../data/Management/Management/2024_TAPS_management.xlsx',
+          sheet = "Planting date",skip = 2,col_names = c("TrtID",
+                                                         "Planting",
+                                                         "Company",
+                                                         "Seeding_Rate"))
+
+management_nitrogen <- read_xlsx('../data/Management/Management/2024_TAPS_management.xlsx',
+          sheet = "Planting date",skip = 2,col_names = c("TrtID",
+                                                         "Planting",
+                                                         "Company",
+                                                         "Seeding_Rate"))
+```
+
+
+
+
+

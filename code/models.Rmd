@@ -11,6 +11,53 @@ library(tidyverse)
 library(xgboost)
 library(caret)
 ```
+<<<<<<< Updated upstream
+=======
+
+```{r}
+file_paths <- list(
+  aqua = "../data/Sensor_data/24 KSU TAPS AquaSpy.xlsx",
+  arable = "../data/Sensor_data/24 KSU TAPS Arable.xlsx",
+  cropx = "../data/Sensor_data/24 KSU TAPS CropX.xlsx",
+  groguru = "../data/Sensor_data/24 KSU TAPS GroGuru.xlsx",
+  sentek = "../data/Sensor_data/24 KSU TAPS Sentek.xlsx"
+)
+
+read_and_bind_sheets_in_file <- function(file_path) {
+  sheets <- excel_sheets(file_path)
+  
+  map_dfr(sheets, ~ read_excel(file_path, sheet = .x) %>%
+            mutate(sheet_name = .x))
+}
+
+df_aqua <- read_and_bind_sheets_in_file(file_paths$aqua)[1:6]
+#df_arable <- read_and_bind_sheets_in_file(file_paths$arable)
+#df_cropx <- read_and_bind_sheets_in_file(file_paths$cropx)
+#df_groguru <- read_and_bind_sheets_in_file(file_paths$groguru)
+df_sentek <- read_and_bind_sheets_in_file(file_paths$sentek)
+
+df_aqua %>% 
+  summarise(Team, Timestamp, moist_6inch = (`4"...4`+`8"...5`)/2) %>% 
+  mutate(Date = as.Date(Timestamp)) %>%  
+  group_by(Team, Date) %>%               
+  summarise(daily_avg_moist = mean(moist_6inch, na.rm = TRUE), .groups = "drop") %>% 
+  mutate(sensor = "aqua") %>% 
+  
+  bind_rows(
+
+df_sentek %>% 
+  summarise(Team, Timestamp, moist_6inch = `Sensor #2 (15 cm)`) %>% 
+  mutate(Date = as.Date(Timestamp)) %>%  
+  group_by(Team, Date) %>%               
+  summarise(daily_avg_moist = mean(moist_6inch, na.rm = TRUE), .groups = "drop") %>% 
+  mutate(sensor = "sentek")
+
+  ) %>% 
+  
+  write.csv(file = "soil_aqua_sentek_6inch.csv")
+```
+
+>>>>>>> Stashed changes
 # Model training
 
 ## Wrangling
