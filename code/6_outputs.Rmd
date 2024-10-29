@@ -5,4 +5,127 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+# Load packages
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(RColorBrewer)
+library(ggpubr)
+```
+
+# Dynamic
+
+```{r}
+df_dynamic <- read.csv("../data/procesed/dynamic_df.csv")
+df_etc <- read.csv("../data/procesed/etc_pred_copy.csv")
+df_sm <- read.csv("../data/procesed/sm_pred.csv")
+df_fc <- read.csv("../data/procesed/AWC_by_plot.csv")
+
+df_dyn1 <- df_dynamic %>% select(-c(RELHUM2MMAX, RELHUM2MMIN, WSPD2MAVG, SOILTMP5AVG, X))
+df_etc1 <- df_etc %>% select(Date, etc_mm_pred, Team, Plot_ID)
+df_sm1 <- df_sm %>% select(Date, Planting_date, sm = daily_avg_moist_pred, Team, Plot_ID)
+df_fc1 <- df_fc %>% select(Team=TRT_ID, Plot_ID, FC, PWP)
+```
+
+Merging dataset
+ 
+```{r}
+df_combined1 <- df_dyn1 %>% 
+  left_join(df_etc1) %>% 
+  left_join(df_sm1) %>% 
+  left_join(df_fc1) %>% 
+  mutate(FC = FC*100,
+         PWP = PWP*100) %>% 
+  filter(Date >= Planting_date) %>% 
+  mutate(Date = as.Date(Date, origin = "2023-12-31"))
+```
+
+# Dynamic
+
+```{r}
+plot_soil_moisture <- function(data, plot) {
+  
+  df_filtered <- data %>% filter(Plot_ID == plot)
+  
+  plot <- plot_ly(df_filtered, x = ~Date) %>%
+    
+    add_bars(y = ~PRECIP, name = "Rainfall", yaxis = "y2", marker = list(color = 'rgba(30, 144, 255, 0.7)', type = 'bar', width = 1)) %>%
+    add_bars(y = ~Irrigation_mm, name = "Irrigation", yaxis = "y2", marker = list(color = 'rgba(0, 0, 139, 0.7)', type = 'bar', width = 1)) %>%
+    add_trace(y = ~sm, type = 'scatter', mode = 'lines', name = "Soil Moisture (Calc'd)", yaxis = "y", 
+              line = list(color = 'rgba(139, 69, 19, 0.8)')) %>%
+    
+    layout(shapes = list(
+      list(type = "rect", fillcolor = "rgba(255, 0, 0, 0.1)", line = list(color = "rgba(173, 216, 230, 0)"),
+           x0 = min(df_filtered$Date), x1 = max(df_filtered$Date), y0 = 0, y1 = max(df_filtered$PWP, na.rm = TRUE), yref = "y"),
+      list(type = "rect", fillcolor = "rgba(0, 255, 0, 0.1)", line = list(color = "rgba(144, 238, 144, 0)"),
+           x0 = min(df_filtered$Date), x1 = max(df_filtered$Date), y0 = min(df_filtered$PWP, na.rm = TRUE), y1 = max(df_filtered$FC, na.rm = TRUE), yref = "y"),
+      list(type = "rect", fillcolor = "rgba(255, 255, 0, 0.1)", line = list(color = "rgba(255, 255, 0, 0)"),
+           x0 = min(df_filtered$Date), x1 = max(df_filtered$Date), y0 = min(df_filtered$FC, na.rm = TRUE), y1 = max(df_filtered$sm, na.rm = TRUE), yref = "y")
+    )) %>%
+    
+    add_lines(y = ~FC, name = "Field Capacity", line = list(dash = 'dash', color = 'rgba(34, 139, 34, 0.8)', width = 3)) %>%
+    add_lines(y = ~PWP, name = "Wilting Point", line = list(dash = 'dash', color = 'rgba(255, 69, 0, 0.8)', width = 3)) %>%
+    
+    layout(
+      title = list(text = paste("Water Dynamics for Plot", plot), font = list(size = 18)),
+      xaxis = list(title = list(text = "", font = list(size = 16)), tickfont = list(size = 14)),
+      yaxis = list(title = list(text = "Soil Moisture (%)", font = list(size = 16)), tickfont = list(size = 14), side = "right"),
+      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", font = list(size = 16)), tickfont = list(size = 14), overlaying = "y", side = "left"),
+      legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.1) # Adjusted legend position and size
+    )
+  
+  return(plot)
+}
+
+plot_soil_moisture(df_combined1, plot = "2502")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
