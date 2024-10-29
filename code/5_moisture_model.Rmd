@@ -21,6 +21,8 @@ df_dyn <- read.csv("../data/procesed/dynamic_df.csv") %>% select(-X)
 df_sm <- read.csv('../data/procesed/soil_aqua_sentek_6inch.csv') %>% .[-c(1,5)] %>% 
   mutate(Date = yday(as.Date(Date)))
 
+summary(df_sm)
+
 df.xgb <- df_sm %>% 
   left_join(
   df_etc) %>% 
