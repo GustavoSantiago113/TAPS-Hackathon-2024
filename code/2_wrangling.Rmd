@@ -91,7 +91,23 @@ sentek_sheets <- excel_sheets(sentek_path)
 
 df_sentek <- map_dfr(sentek_sheets, ~ read_xlsx(sentek_path, sheet = .x, skip = 2) %>%
                            mutate(Team = .x, .before = Timestamp) %>%
-                           mutate(Team = str_extract(Team, "\\d+")))
+                           mutate(Team = str_extract(Team, "\\d+"))) %>% 
+  dplyr::select(Team, Date = Timestamp, s1 = `Sensor #1 (5 cm)`, s2= `Sensor #2 (15 cm)`, s3= `Sensor #3 (25 cm)`, s4= `Sensor #4 (35 cm)`) %>% 
+  mutate(Date = yday(as.Date(Date))) %>% 
+  group_by(Team, Date) %>% 
+  summarise(Team,
+            Date,
+            daily_avg_moist = mean((s1+ s2+ s3+s4)/4)) %>% 
+  unique()
+
+df_sentek %>% 
+  ggplot()+
+  geom_line(aes(Date, daily_avg_moist, color = Team), show.legend = F)+
+  geom_hline(yintercept = 31)+
+  theme_bw()+
+  theme(text = element_text(size =20),
+        panel.grid = element_blank())
+
 ```
 
 ```{r}

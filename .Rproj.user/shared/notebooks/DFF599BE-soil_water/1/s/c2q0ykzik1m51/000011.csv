@@ -1,8 +1,0 @@
-"0","plot_centroid <- st_centroid(plots)"
-"0",""
-"0",""
-"0","ggplot()+"
-"0","  geom_sf(data = plot_centroid, shape = 21, fill = 'steelblue', alpha = .5)+"
-"0","    geom_point(data = soil2, aes (Lng, Lat), shape = 22, fill = 'tomato')+"
-"0","    theme_bw()+"
-"0","    theme(panel.grid = element_blank())"
