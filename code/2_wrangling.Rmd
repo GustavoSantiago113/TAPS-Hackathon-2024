@@ -1,0 +1,221 @@
+---
+title: "models_sm"
+author: "Gabriel Hintz"
+date: "2024-10-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+
+library(tidyverse)
+library(readxl)
+```
+
+# 1 Wrangling
+
+## 1.1 Weather Station (Dynamic)
+
+```{r}
+df.weatherstation <- read.csv('../data/Climate/Climate and weather data/colby_station_kansas_mesonet.csv') %>% 
+  mutate(Date = as.Date(TIMESTAMP, '%m/%d/%Y')) %>% 
+  dplyr::select(- c(
+    STATION,
+    TIMESTAMP,
+    TEMP2MAVG,
+    RELHUM2MAVG,
+    WDIR2M,
+    VWC50CM,
+    VWC20CM,
+    VWC10CM,
+    VWC5CM
+  ))
+
+df.weatherstation
+```
+
+
+## 1.2 Weather Arable (Dynamic)
+
+```{r}
+df.weather <- read.csv(file = "../data/procesed/weather_data_joined_team.csv") %>% 
+  mutate(date = as.Date(date))
+  
+df.weather <- df.weather %>% 
+  summarise(date,
+            et0_mm = arable_field_evapotranspiration_mm,               # Reference Evapotranspiration (ET0, mm)
+            etc_mm = arable_canopy_evapotranspiration_mm,              # Crop Evapotranspiration (ETc, mm)
+            gdd_daily_c = growing_degree_days,                         # Daily Growing Degree Days (°C)
+            gdd_cumulative_c = accumulated_growing_degree_days,        # Cumulative Growing Degree Days (°C)
+            ndvi,                                                      # Normalized Difference Vegetation Index
+            rh_min_perc = minimum_relative_humidity,                   # Minimum Relative Humidity (%)
+            rh_at_tmax_perc = relative_humidity_at_max_temp,           # Relative Humidity at Max Temperature (%)
+            rh_at_tmin_perc = relative_humidity_at_min_temp,           # Relative Humidity at Min Temperature (%)
+            sw_radiation_wm2 = shortwave_downwelling_radiation,        # Shortwave Downwelling Radiation (W/m²)
+            temp_max_c = max_temp,                                     # Maximum Temperature (°C)
+            temp_min_c = min_temp,                                     # Minimum Temperature (°C)
+            temp_mean_c = mean_temp,                                   # Mean Temperature (°C)
+            dew_point_max_c = max_dew_point_temp,                      # Maximum Dew Point Temperature (°C)
+            precip_mm = precipitation,                                 # Precipitation (mm)
+            precip_hours = precipitation_hours,                        # Precipitation Duration (hours)
+            precip_cumulative_mm = cumulative_precipitation,           # Cumulative Precipitation (mm)
+            slp_hpa = sea_level_pressure,                              # Sea Level Pressure (hPa)
+            vpd_hpa = vapor_pressure_deficit,                          # Vapor Pressure Deficit (hPa)
+            kc = crop_coefficient,                                     # Crop Coefficient (Kc, unitless)
+            dew_temp_c = dew_temp,                                     # Dew Temperature (°C)
+            crop_water_demand_mm_day,                                  # Crop Water Demand (mm/day)
+            sun_duration_hours = sun_duration,                         # Sunlight Duration (hours)
+            wind_speed_mps = wind_speed,                               # Wind Speed (m/s)
+            wind_dir_deg = wind_direction_degrees,                     # Wind Direction (degrees)
+            wind_speed_max_mps = max_wind_speed,                       # Maximum Wind Speed (m/s)
+            wind_speed_min_mps = min_wind_speed,                       # Minimum Wind Speed (m/s)
+            trt_id = TrtID) %>% 
+  drop_na()
+```
+
+## 1.3 Soil Sensors (Dynamic)
+
+```{r}
+df.sensors <- read.csv('../data/procesed/soil_aqua_sentek_6inch.csv') %>% 
+  .[,-c(1, 5)] %>% 
+  mutate(Team = as.character(Team),
+         Date = as.Date(Date))
+```
+
+## 1.4 EC (Static)
+
+```{r}
+df.ec <- read.csv('../data/procesed/EC.csv') %>% .[-1]
+```
+
+## 1.5 Management (Static)
+
+```{r}
+df.management <- readxl::read_xlsx('../data/Management/Management/2024_TAPS_management.xlsx', skip = 1, sheet = 1) %>% 
+  mutate(Date = as.Date(Date))
+colnames(df.management)[4] <- "Seeding_rate"
+colnames(df.management)[1] <- "Team"
+colnames(df.management)[2] <- "Planting_date"
+
+
+```
+##  1.6 Nitrogen (Static)
+
+```{r}
+df.nitrogen <-readxl::read_xlsx('../data/Management/Management/2024_TAPS_management.xlsx', skip = 2, sheet = 2) %>% 
+  .[, c(1,9)]
+
+colnames(df.nitrogen)[2] <- 'N_rate'
+colnames(df.nitrogen)[1] <- 'Team'
+
+```
+
+## 1.7 Irrigation (Dynamic)
+
+```{r}
+df.irrigation <- readxl::read_xlsx('../data/Management/Management/2024_TAPS_management.xlsx', skip = 1, sheet = 3) 
+
+colnames(df.irrigation) <- as.Date(as.numeric(colnames(df.irrigation)), origin = "1899-12-30")
+colnames(df.irrigation)[1] <- 'ID'
+colnames(df.irrigation)[22]<- 'Total_irrig_mm'
+colnames(df.irrigation)[12] <- '7/23/24a'
+colnames(df.irrigation)[13] <- '7/23/24b'
+
+df.irrigation <- df.irrigation %>% 
+  mutate(ID = as.character(ID),
+         across(where(is.numeric), ~.*25.4)) %>% 
+  mutate(`7/23/24` = `7/23/24a` + `7/23/24b`,
+         .before = `2024-07-30`) %>% 
+  .[,-c(12,13)] %>% 
+  pivot_longer(cols = 2:20, names_to = 'Date', values_to = 'Irrigation_mm') %>% 
+  dplyr::select(Team = ID, Date, Irrigation_mm) %>% 
+  mutate(Date = as.Date(Date))
+```
+
+## 1.8 Soil texture (Static)
+
+```{r}
+df.texture <- read.csv('../data/procesed/texture.csv') %>% .[-1]
+colnames(df.texture)[2] <- "Team"
+```
+
+## 1.9 NDVI (Dynamic)
+
+```{r}
+df.NDVI <- read.csv('../data/procesed/NDVI_plot_level.csv') %>% 
+  mutate(doy = yday(as.Date(Date)),
+         Plot_ID = as.character(Plot_ID),
+         Mod = NA)
+
+library(mgcv)
+
+new.df.NDVI <- expand.grid(doy =seq(120, 300, 1),
+            Plot_ID = as.character(unique(df.NDVI$Plot_ID)),
+            NDVI_pred = NA) %>% mutate(Plot_ID = as.character(Plot_ID))
+
+for (i in unique(df.NDVI$Plot_ID)){
+  
+  temp_mod <- gam(Planet_NDVI ~ s(doy),
+                  family = betar(),
+                  data = df.NDVI %>% filter(Plot_ID == i))
+  
+  new.df.NDVI$Plot_ID <- as.character(new.df.NDVI$Plot_ID)
+  
+  new.df.NDVI$NDVI_pred[new.df.NDVI$Plot_ID == i] <- 
+    predict.gam(temp_mod, 
+                newdata = new.df.NDVI[new.df.NDVI$Plot_ID == i, ], type = 'response')
+
+}
+new.df.NDVI %>% 
+  ggplot()+
+  geom_line(aes(doy, NDVI_pred, color = Plot_ID), show.legend = F)
+
+```
+
+# 2 Wrangling 2 - Join datasets
+
+## 2.1 Static
+
+```{r}
+df.static <- 
+  df.texture %>% 
+  left_join(df.ec) %>% 
+  left_join(df.management) %>% 
+  left_join(df.nitrogen) %>% 
+  mutate(Planting_date = yday(Planting_date)) %>% 
+  dplyr::select(-Hybrid)
+
+
+#write.csv(df.static, '../data/procesed/static_df.csv')
+```
+## 2.2 Dynamic
+
+```{r}
+df.dynamic <- df.texture[,2:3] %>% 
+  mutate(Team = as.character(Team)) %>% 
+  cross_join(df.weatherstation) %>% 
+  left_join(df.irrigation) %>% 
+  mutate(Irrigation_mm = replace_na(Irrigation_mm, 0),
+         Date = yday(Date)) %>% 
+  left_join(new.df.NDVI %>% rename(Date = doy) %>% 
+              mutate(Plot_ID = as.integer(Plot_ID)))
+
+#write.csv(df.dynamic, '../data/procesed/dynamic_df.csv')
+```
+
+# 3 Wrangling 3 - Response variables
+
+```{r}
+df.weather %>% 
+  dplyr::select(Date = date, etc_in = etc_mm, Team = trt_id) %>% 
+  mutate(Team = as.character(Team)) %>% 
+  ggplot()+
+  geom_line(aes(Date, etc_in*25.4, color = Team))
+
+# write.csv(df.weather %>% 
+#             dplyr::select(Date = date, etc_in = etc_mm, Team = trt_id) %>% 
+#             mutate(Team = as.character(Team)), '../data/procesed/etc.csv')
+```
+

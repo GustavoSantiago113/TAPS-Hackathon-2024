@@ -1,0 +1,277 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# 0. Load packages
+
+```{r}
+library(tidyverse)
+library(caret)
+library(xgboost)
+library(ModelMetrics)
+```
+
+# 1. Import data
+
+```{r}
+df_etc <- read.csv("../data/procesed/etc.csv") %>% select(-X) %>% mutate(Date = as.integer(yday(Date)))
+df_sta <- read.csv("../data/procesed/static_df.csv") %>% select(-X)
+df_dyn <- read.csv("../data/procesed/dynamic_df.csv") %>% select(-X)
+
+df.xgb <- df_etc %>% 
+  left_join(df_sta, by = c("Team")) %>% 
+  left_join(df_dyn, by = c("Team", "Plot_ID", "Date")) %>% 
+  drop_na() %>% 
+  unite(team_id, Team, Plot_ID, remove = F) %>% 
+  mutate(etc_mm = etc_in*25.4) %>% 
+  select(-etc_in)
+
+summary(df_etc)
+```
+
+# 2. Model
+
+$${Arable~ET_c} \sim f(\text{Management}_{\text{plot}}, \text{EC}_{\text{plot}}, \text{Soil texture}_{\text{plot}}, \text{NDVI}_{\text{daily}}, \text{Weather}_{\text{daily}}, \text{Irrigation}_{\text{daily}})$$
+
+# Model: ETc 
+
+```{r}
+train_treatments <- df.xgb %>%
+  group_by(team_id) %>%
+  summarise() %>%
+  sample_frac(0.7) %>%
+  pull(team_id)
+
+df_train <- df.xgb %>%
+  filter(team_id %in% train_treatments)
+
+df_test <- df.xgb %>%
+  filter(!team_id %in% train_treatments)
+```
+
+## XgBoost
+
+```{r}
+tune_control <- caret::trainControl(
+  method = "cv",
+  number = 5,
+  verboseIter = FALSE,
+  allowParallel = TRUE)
+
+hyperparam_grid <- expand.grid(
+  nrounds = c(100, 300),
+  max_depth = c(3, 5, 10),
+  eta = c(0.005, 0.01, 0.1),
+  gamma = 0,
+  colsample_bytree = c(0.7, 1),
+  min_child_weight = 1,
+  subsample = c(0.7, 1))
+
+X_train <- df_train %>%
+  dplyr::select(-c(Team, team_id, Block_ID, Plot_ID, etc_mm)) %>%
+  as.matrix()
+
+y_train <- df_train$etc_mm
+
+# Hyperparameter tuning using k-fold cross-validation
+etc_model <- caret::train(
+  x = X_train,
+  y = y_train,
+  trControl = tune_control,
+  tuneGrid = hyperparam_grid,
+  method = "xgbTree",
+  verbose = FALSE,
+  verbosity = 0)
+
+best_params_etc <- etc_model$bestTune
+
+etc_preds_final <- data.frame(team_id = integer(), Date = as.integer(), preds = numeric(), observed_etc = numeric())
+etc_importance_list <- list()
+unique_treatments <- unique(df.xgb$team_id)
+
+for (i in unique_treatments) {
+  
+  df_train_loocv <- df.xgb %>% filter(team_id != i)
+  df_test_loocv <- df.xgb %>% filter(team_id == i)
+  
+  X_train_loocv <- df_train_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, etc_mm)) %>% as.matrix()
+  y_train_loocv <- df_train_loocv$etc_mm
+  
+  X_test_loocv <- df_test_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, etc_mm)) %>% as.matrix()
+  y_test_loocv <- df_test_loocv$etc_mm
+
+  final_etc_model <- xgboost(
+    data = X_train_loocv,
+    label = y_train_loocv,
+    booster = "gbtree",
+    objective = "reg:squarederror",
+    nrounds = best_params_etc$nrounds,
+    max_depth = best_params_etc$max_depth,
+    colsample_bytree = best_params_etc$colsample_bytree,
+    min_child_weight = best_params_etc$min_child_weight,
+    subsample = best_params_etc$subsample,
+    eta = best_params_etc$eta,
+    gamma = best_params_etc$gamma,
+    verbose = 0)
+  
+  temp_pred_etc <- predict(final_etc_model, X_test_loocv)
+  
+  preds <- data.frame(team_id = i, date = df_test_loocv$Date, preds = temp_pred_etc, observed_etc = y_test_loocv)
+  
+  etc_preds_final <- rbind(etc_preds_final, preds)
+  
+  importance <- xgb.importance(model = final_etc_model)
+  importance$iteration <- i
+  etc_importance_list[[as.character(i)]] <- importance
+}
+
+etc_rmse <- rmse(etc_preds_final$observed_etc, etc_preds_final$preds)
+etc_mae <- mae(etc_preds_final$observed_etc, etc_preds_final$preds)
+etc_r2 <- cor(etc_preds_final$observed_etc, etc_preds_final$preds)^2
+
+list(ETC_RMSE = etc_rmse, etc_MAE = etc_mae, etc_squared = etc_r2)
+```
+
+## Preds
+
+```{r}
+etc_importance_df <- do.call(rbind, etc_importance_list) %>%
+  group_by(Feature) %>%
+  summarise(Importance = mean(Gain, na.rm = TRUE)) %>%
+  arrange(desc(Importance))
+
+top_15_etc <- etc_importance_df %>% top_n(15, Importance)
+
+ggplot(top_15_etc, aes(x = reorder(Feature, Importance), y = Importance, fill = Importance)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_gradient(low = "grey", high = "purple") +
+  labs(title = "Variable Importance for ETc Prediction (Top 15)",
+       x = "Features",
+       y = "Gain") +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 20),
+    axis.title.x = element_text(face = "bold", size = 15),
+    axis.title.y = element_text(face = "bold", size = 15),
+    axis.text = element_text(size = 12))
+
+df_etc_preds_final <- etc_preds_final %>% na.omit()
+
+etc_r_squared <- cor(df_etc_preds_final$observed_etc, df_etc_preds_final$preds)^2
+etc_mae <- mean(abs(df_etc_preds_final$observed_etc - df_etc_preds_final$preds))
+etc_rmse <- sqrt(mean((df_etc_preds_final$observed_etc - df_etc_preds_final$preds)^2))
+etc_rrmse <- etc_rmse / mean(df_etc_preds_final$observed_etc) * 100
+etc_kge <- 1 - sqrt((etc_r_squared - 1)^2 + (mean(df_etc_preds_final$preds) / mean(df_etc_preds_final$observed_etc) - 1)^2)
+
+ggplot(df_etc_preds_final, aes(x = observed_etc, y = preds)) +
+  geom_point(shape = 21, color = "grey", fill = "steelblue", alpha = 0.5, size = 3) +
+  geom_abline(slope = 1, intercept = 0, color = "black", size = 1) + # 1:1 line
+  xlim(0, 10) +
+  ylim(0, 10) +
+  theme_bw() +
+  labs(x = "Observed ETc", y = "Predicted ETc") +
+  # Add metrics as text
+  annotate("text", x = 0.1, y = 10, 
+           label = paste0(
+             "R²: ", round(etc_r_squared, 3), "\n",
+             "MAE: ", round(etc_mae, 3), "\n",
+             "RMSE: ", round(etc_rmse, 3), "\n",
+             "RRMSE: ", round(etc_rrmse, 1), "%\n",
+             "KGE: ", round(etc_kge, 3)
+           ), hjust = 0, vjust = 1) +
+  theme(aspect.ratio = 1,
+        text = element_text(size = 18))
+```
+
+## 
+
+```{r}
+
+full_etc_model <- xgboost(
+  data = X_train,
+  label = y_train,
+  booster = "gbtree",
+  objective = "reg:squarederror",
+  nrounds = best_params_etc$nrounds,
+  max_depth = best_params_etc$max_depth,
+  colsample_bytree = best_params_etc$colsample_bytree,
+  min_child_weight = best_params_etc$min_child_weight,
+  subsample = best_params_etc$subsample,
+  eta = best_params_etc$eta,
+  gamma = best_params_etc$gamma,
+  verbose = 0
+)
+
+df_etc_new <- df_dyn %>%
+  left_join(df_sta, by = c("Team", "Plot_ID")) %>%
+  drop_na() %>%
+  select(-c(Team, Block_ID, Plot_ID)) %>%
+  select(
+    Date,
+    Sand,
+    Clay,
+    SOM,
+    EC_Shallow,
+    EC_deep,
+    Planting_date,
+    Seeding_rate,
+    N_rate,
+    TEMP2MMIN,
+    TEMP2MMAX,
+    RELHUM2MMAX ,
+    RELHUM2MMIN ,
+    PRECIP ,
+    SRAVG ,
+    WSPD2MAVG ,
+    SOILTMP5AVG ,
+    Irrigation_mm,
+    NDVI_pred)
+
+df_etc_new$etc_mm_pred <- predict(full_etc_model, as.matrix(df_etc_new))
+
+df_etc_new <- df_etc_new %>% 
+  left_join(df_sta)
+
+df_etc_new %>% 
+  ggplot()+
+  geom_line(aes(x=Date, y=etc_mm_pred, color=factor(Plot_ID)), show.legend = F, alpha = 0.5)+
+  theme_bw()+
+  xlab("DOY")+
+  ylab("Predicted ETc (mm/day)")+
+  theme(text = element_text(size = 18),
+        panel.grid = element_blank())
+
+#df_etc_new %>% write.csv("../data/procesed/etc_pred.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

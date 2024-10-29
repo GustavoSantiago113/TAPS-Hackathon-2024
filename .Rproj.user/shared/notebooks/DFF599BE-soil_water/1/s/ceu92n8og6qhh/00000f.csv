@@ -1,0 +1,1 @@
+"0","soil <- readxl::read_excel('data/Soil_Analysis/Soil Analysis/24 KSU TAPS Soil texture.xlsx', skip = 1)"

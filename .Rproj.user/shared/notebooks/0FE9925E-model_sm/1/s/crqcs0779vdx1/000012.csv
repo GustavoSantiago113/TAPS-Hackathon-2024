@@ -1,0 +1,99 @@
+"0","for (i in unique_treatments) {
+  
+  df_train_loocv <- df.xgb %>% filter(team_id != i)
+  df_test_loocv <- df.xgb %>% filter(team_id == i)
+  
+  X_train_loocv <- df_train_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, daily_avg_moist)) %>% as.matrix()
+  y_train_loocv <- df_train_loocv$daily_avg_moist
+  
+  X_test_loocv <- df_test_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, daily_avg_moist)) %>% as.matrix()
+  y_test_loocv <- df_test_loocv$daily_avg_moist
+
+  final_sm_model <- xgboost(
+    data = X_train_loocv,
+    label = y_train_loocv,
+    booster = ""gbtree"",
+    objective = ""reg:squarederror"",
+    nrounds = best_params_sm$nrounds,
+    max_depth = best_params_sm$max_depth,
+    colsample_bytree = best_params_sm$colsample_bytree,
+    min_child_weight = best_params_sm$min_child_weight,
+    subsample = best_params_sm$subsample,
+    eta = best_params_sm$eta,
+    gamma = best_params_sm$gamma,
+    verbose = 0)
+  
+  temp_pred_sm <- predict(final_sm_model, X_test_loocv)
+  
+  preds <- data.frame(team_id = i, date = df_test_loocv$Date, preds = temp_pred_sm, observed_sm = y_test_loocv)
+  
+  sm_preds_final <- rbind(sm_preds_final, preds)
+  
+  importance <- xgb.importance(model = final_sm_model)
+  importance$iteration <- i
+  sm_importance_list[[as.character(i)]] <- importance
+}
+for (i in unique_treatments) {
+  
+  df_train_loocv <- df.xgb %>% filter(team_id != i)
+  df_test_loocv <- df.xgb %>% filter(team_id == i)
+  
+  X_train_loocv <- df_train_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, daily_avg_moist)) %>% as.matrix()
+  y_train_loocv <- df_train_loocv$daily_avg_moist
+  
+  X_test_loocv <- df_test_loocv %>% select(-c(Team, team_id, Block_ID, Plot_ID, daily_avg_moist)) %>% as.matrix()
+  y_test_loocv <- df_test_loocv$daily_avg_moist
+
+  final_sm_model <- xgboost(
+    data = X_train_loocv,
+    label = y_train_loocv,
+    booster = ""gbtree"",
+    objective = ""reg:squarederror"",
+    nrounds = best_params_sm$nrounds,
+    max_depth = best_params_sm$max_depth,
+    colsample_bytree = best_params_sm$colsample_bytree,
+    min_child_weight = best_params_sm$min_child_weight,
+    subsample = best_params_sm$subsample,
+    eta = best_params_sm$eta,
+    gamma = best_params_sm$gamma,
+    verbose = 0)
+  
+  temp_pred_sm <- predict(final_sm_model, X_test_loocv)
+  
+  preds <- data.frame(team_id = i, date = df_test_loocv$Date, preds = temp_pred_sm, observed_sm = y_test_loocv)
+  
+  sm_preds_final <- rbind(sm_preds_final, preds)
+  
+  importance <- xgb.importance(model = final_sm_model)
+  importance$iteration <- i
+  sm_importance_list[[as.character(i)]] <- importance
+}
+sm_rmse <- rmse(sm_preds_final$observed_sm, sm_preds_final$preds)
+sm_mae <- mae(sm_preds_final$observed_sm, sm_preds_final$preds)
+sm_r2 <- cor(sm_preds_final$observed_sm, sm_preds_final$preds)^2
+list(sm_RMSE = sm_rmse, sm_MAE = sm_mae, sm_squared = sm_r2)
+"
+"1","$sm_RMSE
+"
+"1","[1]"
+"1"," 4.198298"
+"1","
+"
+"1","
+"
+"1","$sm_MAE
+"
+"1","[1]"
+"1"," 3.16975"
+"1","
+"
+"1","
+"
+"1","$sm_squared
+"
+"1","[1]"
+"1"," 0.6795578"
+"1","
+"
+"1","
+"

@@ -1,0 +1,8 @@
+"0","texture.df <- st_join(plot_centroid,"
+"0","        krig_sand_sf %>% rename(Sand = var1.pred)) %>% "
+"0","  st_join(krig_clay_sf %>% rename(Clay = var1.pred)) %>% "
+"0","  st_join(krig_som_sf %>% rename(SOM = var1.pred)) %>% "
+"0","  as.data.frame() %>% "
+"0","  dplyr::select(2:9, -6, -8)"
+"0",""
+"0","#write.csv(texture.df, 'data/procesed/texture.csv')"
