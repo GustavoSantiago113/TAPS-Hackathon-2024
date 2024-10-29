@@ -15,6 +15,8 @@ library(RColorBrewer)
 library(ggpubr)
 ```
 
+# Plot 1
+
 # Dynamic
 
 ```{r}
@@ -82,6 +84,101 @@ plot_soil_moisture <- function(data, plot) {
 plot_soil_moisture(df_combined1, plot = "2502")
 ```
 
+
+# Plot 2
+
+```{r}
+df_dyn2 <- df_dynamic %>% select(-c(RELHUM2MMAX, RELHUM2MMIN, WSPD2MAVG, SOILTMP5AVG, X))
+df_etc2 <- df_etc %>% select(Date, etc_mm_pred, Team, Plot_ID)
+df_sm2 <- df_sm %>% select(Date, Planting_date, Team, Plot_ID)
+```
+
+Merging dataset
+ 
+```{r}
+df_combined2 <- df_dyn2 %>% 
+  left_join(df_etc2) %>% 
+  left_join(df_sm2) %>% 
+  filter(Date >= Planting_date) %>% 
+  mutate(Date = as.Date(Date, origin = "2023-12-31"))
+```
+
+
+```{r}
+
+plot_etc <- function(data, plot) {
+  
+  df_filtered <- data %>% filter(Plot_ID == plot)
+  
+  plot <- plot_ly(df_filtered, x = ~Date) %>%
+    
+    # add_bars(y = ~PRECIP, name = "Rainfall", yaxis = "y2", marker = list(color = 'rgba(30, 144, 255, 0.7)', type = 'bar', width = 1)) %>%
+    # add_bars(y = ~Irrigation_mm, name = "Irrigation", yaxis = "y2", marker = list(color = 'rgba(0, 0, 139, 0.7)', type = 'bar', width = 1)) %>%
+    add_trace(y = ~etc_mm_pred, type = 'scatter', mode = 'lines', name = "ETc (mm)", yaxis = "y2", 
+              line = list(color = 'rgba(139, 69, 19, 0.8)')) %>%
+    add_trace(y = ~SRAVG, type = 'scatter', mode = 'lines', name = "Radiation", yaxis = "y", 
+              line = list(color = 'rgba(139, 0, 0, 0.7)')) %>%
+    add_trace(y = ~TEMP2MMAX, type = 'scatter', mode = 'lines', name = "Maximum Temperature", yaxis = "y2", 
+              line = list(color = 'rgba(102, 102, 102, 0.7)')) %>%
+    add_trace(y = ~TEMP2MMIN, type = 'scatter', mode = 'lines', name = "Minimum Temperature", yaxis = "y2", 
+              line = list(color = 'rgba(30, 30, 30, 0.7)'), fill = 'tonexty', fillcolor = 'rgba(102, 102, 102, 0.2)') %>%
+    layout(
+      title = list(text = paste("Weather Dynamics for Plot", plot), font = list(size = 18)),
+      xaxis = list(title = list(text = "", font = list(size = 16)), tickfont = list(size = 14)),
+      yaxis = list(title = list(text = "Radiation", font = list(size = 16)), tickfont = list(size = 14), side = "right"),
+      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", font = list(size = 16)), tickfont = list(size = 14), overlaying = "y", side = "left"),
+      margin = list(l = 100, r = 180, t = 70, b = 70),
+
+      legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.1) 
+    )
+  
+  return(plot)
+}
+
+plot_etc(df_combined2, plot = "2502")
+```
+
+```{r}
+plot_etc <- function(data, plot) {
+  
+  df_filtered <- data %>% filter(Plot_ID == plot)
+  
+  plot <- plot_ly(df_filtered, x = ~Date) %>%
+    
+    add_trace(y = ~etc_mm_pred, type = 'scatter', mode = 'lines', name = "ETc (mm)", yaxis = "y2", 
+              line = list(color = 'rgba(139, 69, 19, 0.8)')) %>%
+    add_trace(y = ~SRAVG, type = 'scatter', mode = 'lines', name = "Radiation", yaxis = "y", 
+              line = list(color = 'darkred', opacity = .5)) %>%
+    add_trace(y = ~TEMP2MMAX, type = 'scatter', mode = 'lines', name = "Maximum Temperature", yaxis = "y3", 
+              line = list(color = 'grey10', opacity = .5)) %>%
+    add_trace(y = ~TEMP2MMIN, type = 'scatter', mode = 'lines', name = "Minimum Temperature", yaxis = "y3", 
+              line = list(color = 'grey', opacity = .5), fill = 'tonexty', fillcolor = 'grey50') %>%
+    
+    layout(
+      title = list(text = paste("Water Dynamics for Plot", plot), font = list(size = 18)),
+      xaxis = list(title = list(text = "", font = list(size = 16)), tickfont = list(size = 14)),
+      
+      # Primary y-axis on the right
+      yaxis = list(title = list(text = "Radiation", font = list(size = 16)), tickfont = list(size = 14), side = "right"),
+      
+      # Secondary y-axis on the left for ETc
+      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", font = list(size = 16)), tickfont = list(size = 14), 
+                    overlaying = "y", side = "left", position = ),
+      
+      # Third y-axis, positioned outside the plot area
+      yaxis3 = list(title = list(text = "Temperature (°C)", font = list(size = 16)), tickfont = list(size = 14), 
+                    side = "left", overlaying = "y", position = -0.1),  # Negative position moves it outside the plot
+      
+      margin = list(l = 120, r = 100, t = 70, b = 70),  # Adjusted left margin for extra space
+      
+      legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.2) # Adjusted legend position and size
+    )
+  
+  return(plot)
+}
+
+plot_etc(df_combined2,plot="2502")
+```
 
 
 
