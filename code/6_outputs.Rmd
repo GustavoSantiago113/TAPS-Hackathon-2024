@@ -1,0 +1,8 @@
+---
+title: "6_Outputs"
+author: "Luiz Felipe"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
