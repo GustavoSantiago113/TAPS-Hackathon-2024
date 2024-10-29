@@ -84,6 +84,46 @@ df.sensors <- read.csv('../data/procesed/soil_aqua_sentek_6inch.csv') %>%
          Date = as.Date(Date))
 ```
 
+```{r}
+sentek_path <- "../data/Sensor_data/Sensor Data/24 KSU TAPS Sentek.xlsx"
+
+sentek_sheets <- excel_sheets(sentek_path)
+
+df_sentek <- map_dfr(sentek_sheets, ~ read_xlsx(sentek_path, sheet = .x, skip = 2) %>%
+                           mutate(Team = .x, .before = Timestamp) %>%
+                           mutate(Team = str_extract(Team, "\\d+")))
+```
+
+```{r}
+aquaspy_path <- "../data/Sensor_data/Sensor Data/24 KSU TAPS AquaSpy.xlsx"
+
+column_names <- c("Timestamp", "Moisture_MS", "Moisture_4in", "Moisture_8in", "Moisture_12in", "Moisture_16in",
+                  "Moisture_20in", "Moisture_24in", "Moisture_28in", "Moisture_32in", "Moisture_36in", "Moisture_40in",
+                  "Moisture_44in", "Moisture_48in", "EC_4in", "EC_8in", "EC_12in", "EC_16in", "EC_20in", "EC_24in",
+                  "EC_28in", "EC_32in", "EC_36in", "EC_40in", "EC_44in", "EC_48in", "Temp_4in", "Temp_8in", "Temp_12in",
+                  "Temp_16in", "Temp_20in", "Temp_24in", "Temp_28in", "Temp_32in", "Temp_36in", "Temp_40in",
+                  "Temp_44in", "Temp_48in")
+
+aquaspy_sheets <- excel_sheets(aquaspy_path)
+
+df_aquaspy <- map_dfr(aquaspy_sheets, function(sheet) {
+  
+  data <- read_xlsx(aquaspy_path, sheet = sheet, skip = 2)
+  
+  colnames(data) <- column_names
+  
+  data <- data %>%
+    mutate(Team = str_extract(sheet, "\\d+"), .before = Timestamp) %>%
+    mutate(Timestamp = as.POSIXct(Timestamp, format = "%m/%d/%Y %H:%M:%S")) %>%
+    mutate(across(starts_with("Moisture"), as.numeric),
+           across(starts_with("EC"), as.numeric),
+           across(starts_with("Temp"), as.numeric)) %>%
+    filter(!is.na(Timestamp))
+  
+  return(data)
+})
+```
+
 ## 1.4 EC (Static)
 
 ```{r}
@@ -218,4 +258,29 @@ df.weather %>%
 #             dplyr::select(Date = date, etc_in = etc_mm, Team = trt_id) %>% 
 #             mutate(Team = as.character(Team)), '../data/procesed/etc.csv')
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
