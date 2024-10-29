@@ -1,5 +1,5 @@
 ---
-title: "wrangling"
+title: "Models ETc and NDVI"
 author: "Luiz Felipe"
 date: "`r Sys.Date()`"
 output: html_document
@@ -8,6 +8,8 @@ output: html_document
 ```{r}
 library(readxl)
 library(tidyverse)
+library(xgboost)
+library(caret)
 ```
 # Model training
 
