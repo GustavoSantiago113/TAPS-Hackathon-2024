@@ -1,4 +1,6 @@
 source("server_ui/pages/DataExplore.R")
+source("server_ui/pages/Home.R")
+source("server_ui/pages/About.R")
 
 ui <- fluidPage(
   
@@ -11,9 +13,20 @@ ui <- fluidPage(
               type = "text/css",
               href = "custom.css")
   ),
-  
-  # Include page routing
-  router_ui(
-    route("/", data_explore())
+
+  navbarPage(
+    "Wildcat Squad",
+    tabPanel(
+      "Home",
+      home()
+    ),
+    tabPanel(
+      "Explore the data",
+      data_explore()
+    ),
+    tabPanel(
+      "About",
+      about()
+    )
   )
 )

@@ -37,8 +37,8 @@ show_map <- function(plotBorders, fill_colors, data, input){
     addLegend(
       position = "bottomright",
       title = "NDVI Quartiles",
-      colors = c("red", "yellow", "#78C679", "darkgreen", "#CCCCCC"),
-      labels = c("Q1 (Lowest)", "Q2", "Q3", "Q4 (Highest)", "No Data"),
+      colors = c("darkgreen", "#78C679", "yellow", "red","#CCCCCC"),
+      labels = c("Q4 (Highest)", "Q3", "Q2", "Q1 (Lowest)", "No Data"),
     )
 }
 

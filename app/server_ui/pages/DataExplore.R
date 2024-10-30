@@ -1,8 +1,5 @@
-source("server_ui/components/Header.R")
-
 data_explore <- function(){
   fluidPage(
-    header(),
     div(
       class = "page",
       div(
@@ -16,8 +13,8 @@ data_explore <- function(){
           div(
             div(
               class = "map-box",
-              leafletOutput("map", width = "470px", height = "350px") %>% withSpinner(color="#512888"),
               uiOutput(outputId = "infoBox"),
+              leafletOutput("map", width = "470px", height = "350px") %>% withSpinner(color="#512888"),
             ),
             sliderInput(
                 inputId = "dateInput",

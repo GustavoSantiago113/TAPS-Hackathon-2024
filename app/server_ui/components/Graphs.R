@@ -37,13 +37,14 @@ soil_moisture_graph <- function(data, selected_plot, input){
   df_filtered <- data %>% filter(Plot_ID == plot)
   df_doy <- df_filtered %>% filter(Date == DOY)
   
+
   if (nrow(df_doy) == 0) {
     stop("No data available for the specified DOY.")
   }
   
   pwp_fc_plot <- plot_ly(df_doy, x = ~1) %>%
     add_bars(y = ~PWP, name = "PWP", marker = list(color = 'rgba(255, 102, 102, 0.7)')) %>%
-    add_bars(y = ~FC, name = "FC", marker = list(color = 'rgba(144, 238, 144, 0.7)'), base = ~PWP) %>%
+    add_bars(y = ~FC - PWP, name = "FC", marker = list(color = 'rgba(144, 238, 144, 0.7)'), base = ~PWP) %>%
     layout(
       xaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE),
       yaxis = list(title = list(text = "Soil Moisture", font = list(size = 16)), tickfont = list(size = 14)),
@@ -51,14 +52,17 @@ soil_moisture_graph <- function(data, selected_plot, input){
       legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.1)
     )
   
+
   sm_plot <- plot_ly(df_doy, x = ~1) %>%
     add_bars(y = ~sm, name = "Soil Moisture", marker = list(color = 'rgba(30, 144, 255, 0.7)')) %>%
     
+
     layout(
       xaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE),
       yaxis = list(title = list(text = "Soil Moisture", font = list(size = 16)), tickfont = list(size = 14)),
       legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.1)
     )
+  
 
   combined_plot <- subplot(pwp_fc_plot, sm_plot, nrows = 1, shareY = TRUE, titleX = TRUE)
   

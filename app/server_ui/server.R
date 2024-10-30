@@ -8,9 +8,6 @@ dynamic_data <- read.csv("data/dynamic_df.csv")
 
 server <- function(input, output, session){
   
-  # Router function
-  router_server()
-  
   # Input map ----
   selected_plot <- reactiveVal(2701)
   
@@ -35,5 +32,23 @@ server <- function(input, output, session){
   output$infoBox <- renderUI({  info_box_render(static_data, selected_plot) })
     
   output$staticCards <- renderUI({  show_cards(static_data, selected_plot) })
+  
+  output$static_df <- downloadHandler(
+    filename = function() {
+      paste("WildcatSquad-Static-Data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(static_data, file)
+    }
+  )
+  
+  output$dynamic_df <- downloadHandler(
+    filename = function() {
+      paste("WildcatSquad-Dynamic-Data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(dynamic_data, file)
+    }
+  )
   
 }
