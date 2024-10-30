@@ -270,13 +270,12 @@ plot_ndvi(df_combined1, plot = "2502", DOY = as.Date("2024-07-08"))
 
 ```{r}
 plot_soil_moisture_stack <- function(data, plot, DOY) {
-  # Verificar si DOY es numérico y convertirlo a fecha
+
   if (is.numeric(DOY)) {
-    year_ref <- lubridate::year(min(data$Date))  # Tomar el año más pequeño como referencia
+    year_ref <- lubridate::year(min(data$Date))  
     DOY <- as.Date(DOY - 1, origin = paste0(year_ref, "-01-01"))
   }
   
-  # Filtrar los datos por Plot_ID y la fecha específica (DOY)
   df_filtered <- data %>% filter(Plot_ID == plot)
   df_doy <- df_filtered %>% filter(Date == DOY)
   
@@ -288,7 +287,7 @@ plot_soil_moisture_stack <- function(data, plot, DOY) {
   # Gráfico 1: Barras apiladas para PWP y FC
   pwp_fc_plot <- plot_ly(df_doy, x = ~1) %>%
     add_bars(y = ~PWP, name = "PWP", marker = list(color = 'rgba(255, 102, 102, 0.7)')) %>%
-    add_bars(y = ~FC, name = "FC", marker = list(color = 'rgba(144, 238, 144, 0.7)'), base = ~PWP) %>%
+    add_bars(y = ~FC - PWP, name = "FC", marker = list(color = 'rgba(144, 238, 144, 0.7)'), base = ~PWP) %>%
     layout(
       xaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE),  # Ocultar etiquetas del eje X
       yaxis = list(title = list(text = "Soil Moisture", font = list(size = 16)), tickfont = list(size = 14)),
@@ -315,10 +314,7 @@ plot_soil_moisture_stack <- function(data, plot, DOY) {
 ```
 
 ```{r fig.width=3}
-# Ejemplo de llamada a la función
-plot_soil_moisture_stack(df_combined1, plot = "2502", DOY = as.Date("2024-07-09"))
-
-
+plot_soil_moisture_stack(df_combined1, plot = "2701", DOY = as.Date("2024-07-09"))
 ```
 
 
