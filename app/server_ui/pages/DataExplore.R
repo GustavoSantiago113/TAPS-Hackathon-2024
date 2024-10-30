@@ -7,34 +7,44 @@ data_explore <- function(){
       class = "page",
       div(
         class = "outputs",
-        br(),
-        sliderInput(
-          inputId = "dateInput",
-          label = "Change the day of the year",
-          min = 92,
-          max = 289,
-          value = 92,
-          step = 1
+        p(
+          "Click on a plot to see its data",
+          style = "margin-bottom: 5px; margin-top: 5px; font-weight: bold;"
         ),
-        h3(
-            "Click on a plot to see the data"
-          ),
         div(
-          class = "map-box",
-          leafletOutput("map", width = "550px", height = "350px") %>% withSpinner(color="#512888"),
-          uiOutput(outputId = "infoBox"),
-         ),
-        br(),
-        "NDVI Graph",
-        br(),
-        "Plot 2"
-      ),
-      div(
-        class = "output-right",
-        br(),
-        uiOutput(outputId = "staticCards"),
-        br(),
-        "Plot 4"
+          class = "upper-section",
+          div(
+            div(
+              class = "map-box",
+              leafletOutput("map", width = "470px", height = "350px") %>% withSpinner(color="#512888"),
+              uiOutput(outputId = "infoBox"),
+            ),
+            sliderInput(
+                inputId = "dateInput",
+                label = "Change the day of the year",
+                min = 129,
+                max = 289,
+                value = 200,
+                step = 1
+            ),
+          ),
+          div(
+            style = "width: 200px;",
+            plotlyOutput(outputId = "SoilMoisture") %>% withSpinner(color="#512888"),
+          ),
+          div(
+            uiOutput(outputId = "staticCards"),
+          )
+        ),
+        div(
+          class = "temporal-graphs",
+          div(
+            plotlyOutput(outputId = "NDVITemporal") %>% withSpinner(color="#512888")
+          ),
+          div(
+            plotlyOutput(outputId = "TemporalSoilMoisture") %>% withSpinner(color="#512888")
+          )
+        )
       )
     )
   )

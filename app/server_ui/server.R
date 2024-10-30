@@ -1,6 +1,7 @@
 source("server_ui/components/Map.R")
 source("server_ui/components/InfoBox.R")
 source("server_ui/components/StaticCards.R")
+source("server_ui/components/Graphs.R")
 
 static_data <- read.csv("data/static_df.csv")
 dynamic_data <- read.csv("data/dynamic_df.csv")
@@ -24,6 +25,12 @@ server <- function(input, output, session){
     click_map(input, selected_plot)
 
   })
+  
+  output$NDVITemporal <- renderPlotly({ ndvi_temporal(dynamic_data, selected_plot, input) })
+  
+  output$SoilMoisture <- renderPlotly({ soil_moisture_graph(dynamic_data, selected_plot, input) })
+  
+  output$TemporalSoilMoisture <- renderPlotly({ temporal_soil_moisture(dynamic_data, selected_plot, input) })
   
   output$infoBox <- renderUI({  info_box_render(static_data, selected_plot) })
     

@@ -5,7 +5,9 @@ list.of.packages <- c(
   "sf",
   "dplyr",
   "shinyjs",
-  "shinycssloaders"
+  "shinycssloaders",
+  "plotly",
+  "lubridate"
 )
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -18,3 +20,5 @@ library(sf)
 library(dplyr)
 library(shinyjs)
 library(shinycssloaders)
+library(plotly)
+library(lubridate)

@@ -8,7 +8,7 @@ show_map <- function(plotBorders, fill_colors, data, input){
     maxZoom = 17.3,
     dragging = FALSE
   )) %>%
-    setView(lng = -101.0653,
+    setView(lng = -101.0647,
             lat = 39.3861,
             zoom = 17.3) %>%
     addTiles() %>%

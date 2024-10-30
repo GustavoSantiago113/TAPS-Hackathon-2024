@@ -56,8 +56,6 @@ h1{
 
 /* Page */
 .page{
-  margin-left: 42px;
-  margin-right: 42px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -71,6 +69,15 @@ h1{
   width: 100%;
 }
 
+/* Upper section */
+.upper-section{
+  margin-left: 40px;
+  margin-right: 42px;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
 /* Map and graph section */
 .map-graph{
   display: flex;
@@ -79,7 +86,6 @@ h1{
 }
 
 /* Map */
-
 .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar {
     display: none;
 }
@@ -158,4 +164,13 @@ h1{
 .static-cards .label {
   float: right;
   font-size: 10px;
+}
+
+/* Temporal plots */
+.temporal-graphs{
+  display:flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  
+  
 }
