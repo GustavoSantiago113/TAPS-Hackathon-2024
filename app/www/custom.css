@@ -59,8 +59,16 @@ h1{
   margin-left: 42px;
   margin-right: 42px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-between;
+}
+
+/* Outputs */
+.outputs{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 /* Map and graph section */
@@ -109,32 +117,45 @@ h1{
   border-right: 20px solid #512888;
 }
 
+/* Slider */
+.shiny-input-container:not(.shiny-input-container-inline) {
+    text-align: center;
+}
+
+.irs--shiny .irs-bar {
+    background-color: #512888;
+}
+
+.irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
+    background-color: #512888;
+}
+
 /* Static Cards */
 
 #staticCards{
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex-wrap: wrap;
 }
 
 .static-cards {
   color: white;
   width: 191px;
-  height: 82px;
+  height: 60px;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  margin: 20px;
+  margin: 5px;
 }
 
 .static-cards .value {
-  font-size: 30px;
+  font-size: 15px;
   font-weight: bold;
   margin-bottom: 0px;
-  margin-left: 23px;
+  margin-left: 15px;
 }
 
 .static-cards .label {
   float: right;
-  font-size: 15px;
+  font-size: 10px;
 }
