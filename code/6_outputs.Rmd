@@ -110,6 +110,14 @@ plot_soil_moisture <- function(data, plot, DOY) {
     add_trace(x = df_doy$Date, y = df_doy$Irrigation_mm, type = 'scatter', 
               mode = 'markers', name = "Irrigation (DOY)", yaxis = "y2", 
               marker = list(color = 'rgba(0, 0, 139, 1)', size = 10)) %>%
+    add_trace(
+      y = ~ etc_mm_pred,
+      type = 'scatter',
+      mode = 'lines',
+      name = "ETc",
+      yaxis = "y2",
+      line = list(color = 'rgba(139, 200, 19, 1)')
+    ) %>%
     add_trace(x = df_doy$Date, y = df_doy$FC, type = 'scatter', 
               mode = 'markers', name = "Field Capacity (DOY)", 
               marker = list(color = 'rgba(34, 139, 34, 1)', size = 10)) %>%
@@ -125,7 +133,7 @@ plot_soil_moisture <- function(data, plot, DOY) {
                                 font = list(size = 16)), tickfont = list(size = 14)),
       yaxis = list(title = list(text = "Soil Moisture (%)", 
                                 font = list(size = 16)), tickfont = list(size = 14), side = "right"),
-      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", 
+      yaxis2 = list(title = list(text = "Irrigation / Rainfall / ETc (mm)", 
                                  font = list(size = 16)), 
                     tickfont = list(size = 14), overlaying = "y", side = "left"),
       legend = list(font = list(size = 14), 
@@ -247,8 +255,13 @@ plot_ndvi <- function(data, plot, DOY) {
   }
   df_filtered <- data %>% filter(Plot_ID == plot)
   df_doy <- df_filtered %>% filter(Date == DOY)
+  df_median <- data %>% filter(Plot_ID != plot) %>% 
+    group_by(Date) %>% 
+    summarise(NDVI_pred_median = median(NDVI_pred))
+  
   plot <- plot_ly(df_filtered, x = ~Date) %>%
     add_lines(y = ~NDVI_pred, name = "NDVI", line = list(dash = 'dash', color = 'rgba(34, 139, 34, 0.8)', width = 3)) %>%
+    add_lines(y = ~df_median$NDVI_pred_median, name = "Median NDVI", line = list(dash = 'dot', color = 'rgba(34, 34, 34, 0.8)', width = 3)) %>%
     add_trace(x = df_doy$Date, y = df_doy$NDVI_pred, type = 'scatter', 
               mode = 'markers', name = "NDVI in the selected day", 
               marker = list(color = 'rgba(139, 69, 19, 1)', size = 10))  %>%
@@ -262,6 +275,7 @@ plot_ndvi <- function(data, plot, DOY) {
 
 plot_ndvi(df_combined1, plot = "2502", DOY = as.Date("2024-07-08"))
 
+#df_combined1 %>% group_by(Date) %>% summarise(NDVI_pred_median = median(NDVI_pred))
 
 ```
 
