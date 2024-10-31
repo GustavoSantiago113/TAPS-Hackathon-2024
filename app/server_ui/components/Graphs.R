@@ -205,7 +205,7 @@ plot_irrigation_comparison <- function(data, selected_plot) {
       marker = list(color = c('rgba(30, 144, 255, 0.7)', 'rgba(255, 165, 0, 0.7)'))
     ) %>%
     layout(
-      title = list(text = paste("Cumulative Irrigation for Plot", plot_id), font = list(size = 11)),
+      title = list(text = paste("Cumulative Irrigation for Plot", plot_id), font = list(size = 12)),
       yaxis = list(title = 'Cumulative Irrigation (mm)'),
       xaxis = list(title = ''),
       showlegend = FALSE

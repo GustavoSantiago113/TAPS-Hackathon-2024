@@ -13,7 +13,6 @@ show_cards <- function(static_data, selected_plot){
     select(c(Sand, Clay, SOM, EC_Shallow, EC_deep))
   
   tagList(
-    p(paste("Soil information for plot", plot)),
     div(
       class = "static-cards",
       style = paste("background-color:", get_color(data$Sand, sand_quantile), ";"),
@@ -43,7 +42,8 @@ show_cards <- function(static_data, selected_plot){
       style = paste("background-color:", get_color(data$EC_deep, ec_deep_quantile), ";"),
       p(class = "value", round(data$EC_deep, digits = 1)),
       p(class = "label", "EC Deep(mS/m)")
-    )
+    ),
+    p(paste("Soil information for plot", plot), style = "font-weight: bold;")
   )
 
 }
