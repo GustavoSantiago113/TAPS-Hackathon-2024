@@ -227,8 +227,9 @@ plot_etc <- function(data, plot) {
       yaxis = list(title = list(text = "Radiation", font = list(size = 16)), tickfont = list(size = 14), side = "right"),
       
       # Secondary y-axis on the left for ETc
-      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", font = list(size = 16)), tickfont = list(size = 14), 
-                    overlaying = "y", side = "left", position = ),
+      yaxis2 = list(title = list(text = "Irrigation / Rainfall (mm)", font = list(size = 16)), 
+                    tickfont = list(size = 14), 
+                    overlaying = "y", side = "left"),
       
       # Third y-axis, positioned outside the plot area
       yaxis3 = list(title = list(text = "Temperature (°C)", font = list(size = 16)), tickfont = list(size = 14), 
@@ -260,15 +261,25 @@ plot_ndvi <- function(data, plot, DOY) {
     summarise(NDVI_pred_median = median(NDVI_pred))
   
   plot <- plot_ly(df_filtered, x = ~Date) %>%
-    add_lines(y = ~NDVI_pred, name = "NDVI", line = list(dash = 'dash', color = 'rgba(34, 139, 34, 0.8)', width = 3)) %>%
-    add_lines(y = ~df_median$NDVI_pred_median, name = "Median NDVI", line = list(dash = 'dot', color = 'rgba(34, 34, 34, 0.8)', width = 3)) %>%
-    add_trace(x = df_doy$Date, y = df_doy$NDVI_pred, type = 'scatter', 
-              mode = 'markers', name = "NDVI in the selected day", 
+    add_lines(y = ~NDVI_pred, name = "NDVI in the selected plot", 
+              line = list(dash = 'dash', color = 'rgba(34, 139, 34, 0.8)', width = 3)) %>%
+    
+    add_lines(y = ~df_median$NDVI_pred_median, 
+              name = "Median NDVI", line = list(dash = 'dot',color = 'rgba(34, 34, 34, 0.8)', width = 3)) %>%
+    
+    # add_lines(x = df_doy$Date, y = ~df_median$NDVI_pred_median, name = "Selected day", 
+    #           line = list(color = 'rgba(139, 69, 19, 0.6)', width = 3))  %>%
+    
+    add_trace(x = df_doy$Date, y = df_doy$NDVI_pred, type = 'scatter',
+              mode = 'markers', name = "NDVI in the selected day",
               marker = list(color = 'rgba(139, 69, 19, 1)', size = 10))  %>%
     layout(
+      title = list(text = paste("NDVI Dynamics for Plot", plot), font = list(size = 18)),
       xaxis = list(title = list(text = "", font = list(size = 16)), tickfont = list(size = 14)),
-      yaxis = list(title = list(text = "NDVI", font = list(size = 16)), tickfont = list(size = 14), side = "left"),
-      legend = list(font = list(size = 14), orientation = "h", x = 0.5, xanchor = "center", y = -0.1) 
+      yaxis = list(title = list(text = "NDVI", font = list(size = 16)), 
+                   tickfont = list(size = 14), side = "left"),
+      legend = list(font = list(size = 14), orientation = "h", x = 0.5,
+                    xanchor = "center", y = -0.1) 
     )
   return(plot)
 }
@@ -325,13 +336,52 @@ plot_soil_moisture_stack <- function(data, plot, DOY) {
   
   return(combined_plot)
 }
-```
 
-```{r fig.width=3}
 plot_soil_moisture_stack(df_combined1, plot = "2701", DOY = as.Date("2024-07-09"))
 ```
 
 
+### irrigation applied
+
+```{r}
+plot_irrigation_comparison <- function(data, plot_id) {
+  
+  # Filtrar datos para el plot especificado
+  df_filtered_plot <- data %>%
+    filter(Plot_ID == plot_id)
+  
+  # Calcular el riego acumulado para el plot especificado
+  cumulative_irrigation_plot <- df_filtered_plot %>%
+    summarize(cumulative_irrigation = sum(Irrigation_mm, na.rm = TRUE)) %>%
+    pull(cumulative_irrigation)
+  
+  # Calcular el riego acumulado promedio para todos los otros plots
+  cumulative_irrigation_others <- data %>%
+    filter(Plot_ID != plot_id) %>%
+    group_by(Plot_ID) %>%
+    summarize(cumulative_irrigation = sum(Irrigation_mm, na.rm = TRUE)) %>%
+    summarize(mean_cumulative_irrigation = mean(cumulative_irrigation, na.rm = TRUE)) %>%
+    pull(mean_cumulative_irrigation)
+  
+  # Crear el gráfico de barras
+  plot_ly() %>%
+    add_bars(
+      x = c('Specified Plot', 'Average of Other Plots'),
+      y = c(cumulative_irrigation_plot, cumulative_irrigation_others),
+      marker = list(color = c('rgba(30, 144, 255, 0.7)', 'rgba(255, 165, 0, 0.7)'))
+    ) %>%
+    layout(
+      title = paste("Cumulative Irrigation for Plot", plot_id, "vs Others"),
+      yaxis = list(title = 'Cumulative Irrigation (mm)'),
+      xaxis = list(title = ''),
+      showlegend = FALSE
+    )
+}
+
+
+plot_irrigation_comparison(df_combined2, "2502")
+
+```
 
 
 
