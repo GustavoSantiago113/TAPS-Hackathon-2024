@@ -15,7 +15,11 @@ ndvi_temporal <- function(data, selected_plot, input){
     stop("No data available for the specified DOY.")
   }
   
-  df_median <- data %>% filter(Plot_ID != plot) %>% 
+  days <- df_filtered$Date
+  
+  df_median <- data %>%
+    filter(Plot_ID != plot,
+           Date %in% days) %>% 
     group_by(Date) %>% 
     summarise(NDVI_pred_median = median(NDVI_Pred))
   
