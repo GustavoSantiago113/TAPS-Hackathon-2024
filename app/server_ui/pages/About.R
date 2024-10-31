@@ -56,7 +56,7 @@ about <- function(){
         h3("Luiz Felipe Almeida"),
         div(
           class = "about-text-photo",
-          p("I was born and raised in Maringá, a city in the state of Paraná, Brazil. I obtained my Bachelor of Science degree from the State University of Maringá. During my undergraduate studies, I had an enriching experience working as a research scholar at Embrapa Soybean in Brazil for a year. After completing my BS degree, I embarked on a new journey as a research scholar at Kansas State University in February 2020. In 2022, I seized another opportunity to advance my education and started a Master's program, which I am currently actively involved in. My research focuses on studying soybean N fixation across various environments in the United States, and also the crop's nutritional status, seed yield, and seed quality, aiming to deepen our understanding of these important factors."),
+          p("I grew up in Southern Brazil and earned my Bachelor’s degree from the State University of Maringá. During my undergraduate studies, I spent a year at Embrapa Soybean, which laid the foundation for my move to Kansas State University as a research scholar in early 2020. I began my Master’s program in 2022 and recently transitioned to a Ph.D. focused on nitrogen fixation modeling in the U.S. My research explores how management practices and plant physiology influence nitrogen fixation, using tools like Bayesian statistics, machine learning, and crop models to deepen understanding and generate knowledge valuable to science and society."),
           img(src = "luiz.jpeg", class = "photo")
         )
       ),
