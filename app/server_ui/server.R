@@ -27,6 +27,8 @@ server <- function(input, output, session){
   
   output$SoilMoisture <- renderPlotly({ soil_moisture_graph(dynamic_data, selected_plot, input) })
   
+  output$Irrigation <- renderPlotly({ plot_irrigation_comparison(dynamic_data, selected_plot) })
+  
   output$TemporalSoilMoisture <- renderPlotly({ temporal_soil_moisture(dynamic_data, selected_plot, input) })
   
   output$infoBox <- renderUI({  info_box_render(static_data, selected_plot) })

@@ -1,6 +1,7 @@
 show_map <- function(plotBorders, fill_colors, data, input){
   
   colored_borders <- get_quartile_colors(data, input$dateInput, plotBorders)
+  day_data <- data[data$Date == input$dateInput, ]
   
   leaflet(options = leafletOptions(
     zoomControl = FALSE,
@@ -27,9 +28,9 @@ show_map <- function(plotBorders, fill_colors, data, input){
         bringToFront = TRUE
       ),
       label = paste("Plot Id: ", plotBorders$Plot_ID, 
-                    "\nNDVI: ", round(data$NDVI_Pred[
-                      match(plotBorders$Plot_ID, data$Plot_ID) &
-                        data$Date == input$dateInput
+                    "\nNDVI: ", round(day_data$NDVI_Pred[
+                      match(plotBorders$Plot_ID, day_data$Plot_ID) &
+                        day_data$Date == input$dateInput
                     ], 3),
                     sep = "")
     ) %>%

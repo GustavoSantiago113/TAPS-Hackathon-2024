@@ -14,6 +14,7 @@ info_box_render <- function(static_data, selected_plot){
       p(paste("Planting date: ", data$PlantingDate, sep = "")),
       p(paste("Hybrid: ", data$Hybrid, sep = "")),
       p(paste("Seed company: ", data$Company, sep = "")),
+      p(paste("N rate (lb/acre): ", data$N_rate, sep = "")),
     )
   )
 }

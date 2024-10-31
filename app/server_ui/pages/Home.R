@@ -14,6 +14,12 @@ home <- function(){
         
         div(class = "content-overlay",
             
+            div(
+              class = "home-logos",
+              img(src = "ksu_taps.png", class = "logo"),
+              img(src = "ksu.png", class = "logo")
+            ),
+            
             div(class = "title-section",
                 h1("TAPS Hackathon 2024")
             ),
@@ -24,7 +30,7 @@ home <- function(){
             
             div(
               class = "message-container",
-                h4("Click in 'Explore the data to get started'")
+                h4("Click 'Explore the data' to get started")
             ),
             
             div(class = "button-container",
