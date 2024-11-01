@@ -1,0 +1,12 @@
+name: home
+title: home
+username: wildcatsquadtaps
+account: wildcatsquadtaps
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13200642
+bundleId: 9299217
+url: https://wildcatsquadtaps.shinyapps.io/home/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
